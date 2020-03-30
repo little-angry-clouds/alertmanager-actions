@@ -1,0 +1,14 @@
+pyms:
+  services:
+    metrics: true
+    tracer:
+      enabled: false
+  config:
+    debug: true
+    app_name: alertmanager-actions
+
+alertmanager_actions:
+  - labels:
+      alertname: TestActions
+      test: 'yes'
+    command: curl https://gnu.org -L

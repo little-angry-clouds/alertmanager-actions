@@ -1,0 +1,11 @@
+pyms:
+  services:
+    metrics: true
+  config:
+    debug: true
+    app_name: alertmanager-actions
+    testing: false
+alertmanager_actions:
+  - labels:
+      alertname: TestActions
+      test: "yes"
