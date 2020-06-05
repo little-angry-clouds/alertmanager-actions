@@ -95,7 +95,7 @@ class AlertmanagerActions:
             Stops the threads and restarts them.
             """
             logger.info("Reloading configuration")
-            self.read_config()
+            self._read_config()
             logger.info("Configuration reloaded")
             return jsonify("OK")
 
