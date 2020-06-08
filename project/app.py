@@ -65,9 +65,17 @@ class AlertmanagerActions:
             for received_label in received_labels:
                 logger.debug("Received label: %s" % received_label)
                 if labels.items() <= received_label.items():
-                    cmd = action["command"].split(" ")
+                    # Make available all labels through environmental variables
+                    env = environ.copy()
+                    for k, v in received_label.items():
+                        env[k.upper()] = v
+                    cmd = action["command"].replace("\n", ";")
                     command = subprocess.Popen(
-                        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        shell=True,
+                        env=env
                     )
                     stdout, stderr = command.communicate()
                     logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
