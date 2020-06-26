@@ -39,7 +39,7 @@ pyms:
     testing: false
 alertmanager_actions:
   - labels:
-      alertname: IpsecStatus
+      alertname: ExampleAlertName
       action: restart
     command: ssh -i /home/user/.ssh/id_rsa user@mycoolbox.com hostname
 ```
