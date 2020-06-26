@@ -20,6 +20,7 @@ class AlertmanagerActions:
         Initialize the flask endpoint and launch the function that will throw
         the threads that will update the metrics.
         """
+        self.lock = {}
         self.app = Microservice().create_app()
         self._read_config()
         self.serve_endpoints()
@@ -49,14 +50,18 @@ class AlertmanagerActions:
                 log = log % (", ".join(differences))
                 logger.error(log)
                 sys.exit(1)
+
+        for action in config:
+            self.lock[action["name"]] = False
+
         log = "Configuration read: %s" % (config)
         logger.debug(log)
         self.config = config
 
     def _launch_action(self):
-        if not request.content_type.startswith("application/json"):
-            logger.error("The received content type should be 'application/json'.")
-            return "KO"
+        treated_actions = []
+        if not request.content_type:
+            logger.warning("The received content type should be 'application/json'.")
         logger.debug("Received Json: %s" % request.json)
         received_labels = [x["labels"] for x in request.json["alerts"]]
         for action in self.config:
@@ -65,11 +70,20 @@ class AlertmanagerActions:
             for received_label in received_labels:
                 logger.debug("Received label: %s" % received_label)
                 if labels.items() <= received_label.items():
+                    if action["name"] in treated_actions:
+                        logger.debug("Action already treated, so the command won't be executed")
+                        return "OK"
+                    if self.lock[action["name"]]:
+                        logger.debug("The lock is active, so the command won't be executed")
+                        return "OK"
+                    treated_actions.append(action["name"])
+                    self.lock[action["name"]] = True
                     # Make available all labels through environmental variables
                     env = environ.copy()
                     for k, v in received_label.items():
                         env[k.upper()] = v
-                    cmd = action["command"].replace("\n", ";")
+                    cmd = ";".join([x for x in action["command"]])
+                    logger.debug("Command: %s" % cmd)
                     command = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
@@ -80,7 +94,8 @@ class AlertmanagerActions:
                     stdout, stderr = command.communicate()
                     logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
                     if stderr:
-                        logger.error(stderr)
+                        logger.error("Error: %s" % stderr)
+                    self.lock[action["name"]] = False
         return "OK"
 
     def serve_endpoints(self):
