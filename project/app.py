@@ -51,6 +51,7 @@ class AlertmanagerActions:
                 logger.error(log)
                 sys.exit(1)
 
+        # Initialize and clean the locks
         for action in config:
             self.lock[action["name"]] = False
 
@@ -69,21 +70,29 @@ class AlertmanagerActions:
             labels = action["labels"]
             for received_label in received_labels:
                 logger.debug("Received label: %s" % received_label)
+                # Proceed only if action's labels are in received labels
                 if labels.items() <= received_label.items():
+                    # Proceed only if the action hasn't been treated in the same request
+                    # AKA alerts deduplication
                     if action["name"] in treated_actions:
                         logger.debug("Action already treated, so the command won't be executed")
                         return "OK"
+                    treated_actions.append(action["name"])
+                    # Proceed only if there's no lock at the action level
+                    # This prevents the action to be executed if shortly after receiving
+                    # the alert but before executing, the same action is received
                     if self.lock[action["name"]]:
                         logger.debug("The lock is active, so the command won't be executed")
                         return "OK"
-                    treated_actions.append(action["name"])
                     self.lock[action["name"]] = True
                     # Make available all labels through environmental variables
                     env = environ.copy()
                     for k, v in received_label.items():
                         env[k.upper()] = v
+                    # Join the list of commands to one line with a ; separator
                     cmd = ";".join([x for x in action["command"]])
                     logger.debug("Command: %s" % cmd)
+                    # TODO The command is executed in a very untrustful way
                     command = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
@@ -91,10 +100,12 @@ class AlertmanagerActions:
                         shell=True,
                         env=env
                     )
+                    # Treat command output
                     stdout, stderr = command.communicate()
                     logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
                     if stderr:
                         logger.error("Error: %s" % stderr)
+                    # Free the lock
                     self.lock[action["name"]] = False
         return "OK"
 
