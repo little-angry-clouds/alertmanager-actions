@@ -75,14 +75,18 @@ class AlertmanagerActions:
                     # Proceed only if the action hasn't been treated in the same request
                     # AKA alerts deduplication
                     if action["name"] in treated_actions:
-                        logger.debug("Action already treated, so the command won't be executed")
+                        logger.debug(
+                            "Action already treated, so the command won't be executed"
+                        )
                         return "OK"
                     treated_actions.append(action["name"])
                     # Proceed only if there's no lock at the action level
                     # This prevents the action to be executed if shortly after receiving
                     # the alert but before executing, the same action is received
                     if self.lock[action["name"]]:
-                        logger.debug("The lock is active, so the command won't be executed")
+                        logger.debug(
+                            "The lock is active, so the command won't be executed"
+                        )
                         return "OK"
                     self.lock[action["name"]] = True
                     # Make available all labels through environmental variables
@@ -98,7 +102,7 @@ class AlertmanagerActions:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         shell=True,
-                        env=env
+                        env=env,
                     )
                     # Treat command output
                     stdout, stderr = command.communicate()

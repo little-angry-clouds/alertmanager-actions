@@ -28,7 +28,12 @@ class TestAlertmanagerActions(unittest.TestCase):
     def test_read_config_ko(self, exit_calls):
         os.environ["ALERTMANAGER_ACTIONS_CONFIG"] = "tests/config-ko.yml"
         alertmanager_actions = project.app.AlertmanagerActions()
-        data = [{"labels": {"alertname": "TestActions", "test": "yes"}}]
+        data = [
+            {
+                "name": "TestActions",
+                "labels": {"alertname": "TestActions", "test": "yes"},
+            }
+        ]
         assert data == alertmanager_actions.config
         assert exit_calls.call_count == 1
 
