@@ -44,6 +44,9 @@ alertmanager_actions:
     command: ssh -i /home/user/.ssh/id_rsa user@mycoolbox.com hostname
 ```
 
+It's possible to read a more complete step by step documentation
+[here](./docs/configuration.md).
+
 ## Development
 ### Tests
 
