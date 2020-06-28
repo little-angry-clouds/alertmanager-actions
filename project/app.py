@@ -78,7 +78,7 @@ class AlertmanagerActions:
                         logger.debug(
                             "Action already treated, so the command won't be executed"
                         )
-                        return "OK"
+                        return "KO"
                     treated_actions.append(action["name"])
                     # Proceed only if there's no lock at the action level
                     # This prevents the action to be executed if shortly after receiving
@@ -87,7 +87,7 @@ class AlertmanagerActions:
                         logger.debug(
                             "The lock is active, so the command won't be executed"
                         )
-                        return "OK"
+                        return "KO"
                     self.lock[action["name"]] = True
                     # Make available all labels through environmental variables
                     env = environ.copy()
