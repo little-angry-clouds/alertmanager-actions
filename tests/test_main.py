@@ -4,13 +4,7 @@ import os
 import pytest
 
 
-@pytest.mark.parametrize(
-    "case,number_exit_calls",
-    [
-        ("ok", 0),
-        ("ko", 1),
-    ],
-)
+@pytest.mark.parametrize("case,number_exit_calls", [("ok", 0), ("ko", 1)])
 @unittest.mock.patch("sys.exit")
 def test_read_config(exit_calls, case, number_exit_calls):
     ms = unittest.mock.patch("project.app.Microservice").start()
