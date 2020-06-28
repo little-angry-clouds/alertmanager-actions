@@ -1,0 +1,36 @@
+name: Test and build docker
+
+on: push
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: Install dependencies
+        run: pip install pipenv && pipenv install && pipenv run pip install pytest pytest-cov
+      - name: Execute unit tests
+        run: pipenv run pytest --cov=project/ --cov-report term-missing project/ tests/ -r s
+      - name: Coveralls
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          github-token: ${{ secrets.COVERALLS_TOKEN }}
+
+  docker:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build and push image
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: littleangryclouds/alertmanager-actions
+          tag_with_ref: true
+          tag_with_sha: true

@@ -6,7 +6,8 @@ pyms:
     app_name: alertmanager-actions
     testing: false
 alertmanager_actions:
-  - labels:
+  - name: TestActions
+    labels:
       alertname: TestActions
       test: "yes"
     command: hostname
