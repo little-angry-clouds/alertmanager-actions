@@ -1,7 +1,12 @@
 # Alertmanager Actions
 
 ![Test](https://github.com/little-angry-clouds/alertmanager-actions/workflows/Test%20and%20build%20docker/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/little-angry-clouds/alertmanager-actions/badge.svg?branch=master)](https://coveralls.io/github/little-angry-clouds/alertmanager-actions?branch=master)
+[![Coverage
+Status](https://coveralls.io/repos/github/little-angry-clouds/alertmanager-actions/badge.svg?branch=master)](https://coveralls.io/github/little-angry-clouds/alertmanager-actions?branch=master)
+[![Total
+alerts](https://img.shields.io/lgtm/alerts/g/little-angry-clouds/alertmanager-actions.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/little-angry-clouds/alertmanager-actions/alerts/)
+[![Language grade:
+Python](https://img.shields.io/lgtm/grade/python/g/little-angry-clouds/alertmanager-actions.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/little-angry-clouds/alertmanager-actions/context:python)
 
 An Alert Manager
 [receiver](https://prometheus.io/docs/alerting/configuration/#receiver) that
