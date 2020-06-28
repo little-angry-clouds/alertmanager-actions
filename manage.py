@@ -9,5 +9,5 @@ app = AlertmanagerActions()
 manager = Manager(app.app)
 manager.add_command("runserver", Server(use_reloader=False))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     manager.run()

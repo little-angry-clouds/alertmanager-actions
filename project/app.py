@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-import subprocess
+import subprocess  # nosec
 import sys
 from os import environ
 
@@ -101,7 +101,7 @@ class AlertmanagerActions:
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
-                        shell=True,
+                        shell=True,  # nosec
                         env=env,
                     )
                     # Treat command output
@@ -139,4 +139,4 @@ class AlertmanagerActions:
 
     def run_webserver(self):
         "Start the web application."
-        self.app.run(port="8080", host="0.0.0.0", use_reloader=False)
+        self.app.run(port="8080", host="0.0.0.0", use_reloader=False)  # nosec

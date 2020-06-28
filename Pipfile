@@ -12,3 +12,11 @@ python_version = "3.6"
 
 [pipenv]
 allow_prereleases = true
+
+[dev-packages]
+v = {editable = true,version = "*"}
+tox = "*"
+bandit = "*"
+safety = "*"
+pytest = "*"
+python-coveralls = "*"
