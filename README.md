@@ -1,7 +1,7 @@
 # Alertmanager Actions
 
 ![Test](https://github.com/little-angry-clouds/alertmanager-actions/workflows/Test%20and%20build%20docker/badge.svg)
-[![Coverage](https://coveralls.io/repos/github/little-angry-clouds/alertmanager-actions/badge.svg)](https://coveralls.io/github/little-angry-clouds/alertmanager-actions)
+[![Coverage Status](https://coveralls.io/repos/github/little-angry-clouds/alertmanager-actions/badge.svg?branch=master)](https://coveralls.io/github/little-angry-clouds/alertmanager-actions?branch=master)
 
 An Alert Manager
 [receiver](https://prometheus.io/docs/alerting/configuration/#receiver) that
