@@ -56,6 +56,9 @@ alertmanager_actions:
 It's possible to read a more complete step by step documentation
 [here](./docs/configuration.md).
 
+Also, there's a docker image you may use in [Docker
+Hub](https://hub.docker.com/repository/docker/littleangryclouds/alertmanager-actions).
+
 ## Development
 ### Tests
 
