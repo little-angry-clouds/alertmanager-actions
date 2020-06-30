@@ -22,10 +22,10 @@ class AlertmanagerActions:
         """
         self.lock = {}
         self.app = Microservice().create_app()
-        self._read_config()
+        self.read_config()
         self.serve_endpoints()
 
-    def _read_config(self):
+    def read_config(self):
         """
         Read configuration from yaml file.
         """
@@ -35,12 +35,13 @@ class AlertmanagerActions:
             path = "config.yml"  # pragma: no cover
         log = "Reading configuration file in path: %s" % (path)
         logger.debug(log)
+        config = []
         try:
             config = yaml.safe_load(open(path))["alertmanager_actions"]
         except Exception as error:
-            log = "There was an error loading the file" % (error)
+            log = "There was an error loading the file: %s" % (error)
             logger.error(log)
-            return
+            sys.exit(1)
 
         for action in config:
             main_keys = ["labels", "command"]
@@ -59,7 +60,7 @@ class AlertmanagerActions:
         logger.debug(log)
         self.config = config
 
-    def _launch_action(self):
+    def launch_action(self):
         treated_actions = []
         if not request.content_type:
             logger.warning("The received content type should be 'application/json'.")
@@ -71,47 +72,61 @@ class AlertmanagerActions:
             for received_label in received_labels:
                 logger.debug("Received label: %s" % received_label)
                 # Proceed only if action's labels are in received labels
-                if labels.items() <= received_label.items():
-                    # Proceed only if the action hasn't been treated in the same request
-                    # AKA alerts deduplication
-                    if action["name"] in treated_actions:
-                        logger.debug(
-                            "Action already treated, so the command won't be executed"
-                        )
+                if received_label.items() >= labels.items():
+                    locked = self._lock_action(action["name"])
+                    if locked:
                         return "KO"
-                    treated_actions.append(action["name"])
-                    # Proceed only if there's no lock at the action level
-                    # This prevents the action to be executed if shortly after receiving
-                    # the alert but before executing, the same action is received
-                    if self.lock[action["name"]]:
-                        logger.debug(
-                            "The lock is active, so the command won't be executed"
-                        )
-                        return "KO"
-                    self.lock[action["name"]] = True
-                    # Make available all labels through environmental variables
-                    env = environ.copy()
-                    for k, v in received_label.items():
-                        env[k.upper()] = v
-                    # Join the list of commands to one line with a ; separator
-                    cmd = ";".join([x for x in action["command"]])
-                    logger.debug("Command: %s" % cmd)
-                    # TODO The command is executed in a very untrustful way
-                    command = subprocess.Popen(
-                        cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        shell=True,  # nosec
-                        env=env,
+                    treated_actions, treated = self._treat_action(
+                        action["name"], treated_actions
                     )
-                    # Treat command output
-                    stdout, stderr = command.communicate()
-                    logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
-                    if stderr:
-                        logger.error("Error: %s" % stderr)
-                    # Free the lock
-                    self.lock[action["name"]] = False
+                    if treated:
+                        return "KO"
+                    self._execute_command(action["command"], received_label.items())
+                    self._unlock_action(action["name"])
         return "OK"
+
+    def _execute_command(self, command, labels):
+        # Make available all labels through environmental variables
+        env = environ.copy()
+        for k, v in labels:
+            env[k.upper()] = v
+        # Join the list of commands to one line with a ; separator
+        cmd = ";".join([x for x in command])
+        logger.debug("Command: %s" % cmd)
+        # TODO The command is executed in a very untrustful way
+        command = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,  # nosec
+            env=env,
+        )
+        # Treat command output
+        stdout, stderr = command.communicate()
+        logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
+        if stderr:
+            logger.error("Error: %s" % stderr)
+
+    def _treat_action(self, action_name, treated_actions):
+        # Proceed only if the action hasn't been treated in the same request
+        # AKA alerts deduplication
+        if action_name in treated_actions:
+            logger.debug("Action already treated, so the command won't be executed")
+            return treated_actions, True
+        treated_actions.append(action_name)
+        return treated_actions, False
+
+    def _lock_action(self, action_name):
+        # This prevents the action to be executed if shortly after receiving
+        # the alert but before executing, the same action is received
+        if self.lock[action_name]:
+            logger.debug("The lock is active, so the command won't be executed")
+            return True
+        self.lock[action_name] = True
+        return False
+
+    def _unlock_action(self, action_name):
+        self.lock[action_name] = False
 
     def serve_endpoints(self):
         """
@@ -124,7 +139,7 @@ class AlertmanagerActions:
             """
             Exposes a blank html page with a link to the metrics.
             """
-            state = self._launch_action()
+            state = self.launch_action()
             return jsonify(state)
 
         @self.app.route("/-/reload")
@@ -133,7 +148,7 @@ class AlertmanagerActions:
             Stops the threads and restarts them.
             """
             logger.info("Reloading configuration")
-            self._read_config()
+            self.read_config()
             logger.info("Configuration reloaded")
             return jsonify("OK")
 
