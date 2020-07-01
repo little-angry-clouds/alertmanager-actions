@@ -64,7 +64,10 @@ class AlertmanagerActions:
         treated_actions = []
         if not request.content_type:
             logger.warning("The received content type should be 'application/json'.")
-        logger.debug("Received Json: %s" % request.json)
+        valid = self._check_valid_request(request)
+        if not valid:
+            return "KO"
+        logger.debug("Received request: %s" % request.json)
         received_labels = [x["labels"] for x in request.json["alerts"]]
         for action in self.config:
             logger.debug("Action: %s" % action)
@@ -127,6 +130,15 @@ class AlertmanagerActions:
 
     def _unlock_action(self, action_name):
         self.lock[action_name] = False
+
+    def _check_valid_request(self, request):
+        if "alerts" not in request.json:
+            logger.debug("Invalid request: %s" % request.json)
+            return False
+        if type(request.json["alerts"]) is not list:
+            logger.debug("Invalid request: %s" % request.json)
+            return False
+        return True
 
     def serve_endpoints(self):
         """

@@ -12,6 +12,6 @@ alertmanager_actions:
   - name: TestActions
     labels:
       alertname: TestActions
-    command: |
-      echo $ACTION
-      echo $ALERTNAME
+    command:
+      - echo $ACTION
+      - echo $ALERTNAME

@@ -10,4 +10,5 @@ alertmanager_actions:
     labels:
       alertname: TestActions
       test: "yes"
-    command: hostname
+    command:
+      - hostname
