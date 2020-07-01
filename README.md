@@ -59,6 +59,34 @@ It's possible to read a more complete step by step documentation
 Also, there's a docker image you may use in [Docker
 Hub](https://hub.docker.com/repository/docker/littleangryclouds/alertmanager-actions).
 
+## Metrics
+It exposes some prometheus metrics. The ones that come with
+[Pyms](https://py-ms.readthedocs.io/en/latest/services/#metrics)
+and then ones about the Alertmanager Actions itself. The created metric would be
+something like this:
+
+``` text
+# HELP alertmanager_actions_total Number of alertmanager actions executions
+# TYPE alertmanager_actions_total counter
+alertmanager_actions_total{action="TestActions",alertname="TestActions",state="0"} 1.0
+alertmanager_actions_total{action="TestActions",alertname="TestActions",state="1"} 1.0
+# HELP alertmanager_actions_created Number of alertmanager actions executions
+# TYPE alertmanager_actions_created gauge
+alertmanager_actions_created{action="TestActions",alertname="TestActions",state="0"} 1.5936252529745235e+09
+alertmanager_actions_created{action="TestActions",alertname="TestActions",state="1"} 1.5936252952259927e+09
+```
+
+The metric's name is `alertmanager_actions_executions` and will have the next
+metrics:
+- action: The action name.
+- state: The state of the executed command. 0 means that it worked correctly, 1
+  that it didn't.
+- arbitrary labels: There will also be added all the labels that are used to
+  identify the action. Following the above example, the next labels will be
+  added:
+  - alertname: ExampleAlertName
+  - action: restart
+
 ## Development
 ### Tests
 
