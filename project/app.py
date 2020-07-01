@@ -59,7 +59,7 @@ class AlertmanagerActions:
             # Reinitializing the same metric fails, so catch that error
             try:
                 self.counter = Counter(
-                    "alertmanager_actions",
+                    "alertmanager_actions_executions",
                     "Number of alertmanager actions executions",
                     ["action", "state", *action["labels"].keys()],
                 )
