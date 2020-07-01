@@ -174,7 +174,7 @@ class AlertmanagerActions:
             Exposes a blank html page with a link to the metrics.
             """
             state = self.launch_action()
-            return jsonify(state)
+            return jsonify(message=state)
 
         @self.app.route("/-/reload")
         def reload():
@@ -184,7 +184,7 @@ class AlertmanagerActions:
             logger.info("Reloading configuration")
             self.read_config()
             logger.info("Configuration reloaded")
-            return jsonify("OK")
+            return jsonify(message="OK")
 
     def run_webserver(self):
         "Start the web application."
