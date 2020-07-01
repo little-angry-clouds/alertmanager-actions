@@ -8,8 +8,11 @@ import pytest
 def setup():
     ms = unittest.mock.patch("project.app.Microservice")
     ms.start()
+    metrics = unittest.mock.patch("project.app.Counter")
+    metrics.start()
     yield
     ms.stop()
+    metrics.stop()
 
 
 @pytest.mark.parametrize("case,number_exit_calls", [("ok", 0), ("ko", 1), ("nope", 1)])

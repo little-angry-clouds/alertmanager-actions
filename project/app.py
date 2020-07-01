@@ -9,6 +9,7 @@ import yaml
 from flask import jsonify, request
 from pyms.flask.app import Microservice
 from pyms.constants import LOGGER_NAME
+from prometheus_client import Counter
 
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -52,9 +53,18 @@ class AlertmanagerActions:
                 logger.error(log)
                 sys.exit(1)
 
-        # Initialize and clean the locks
+        # Initialize locks and metrics and clean the locks
         for action in config:
             self.lock[action["name"]] = False
+            # Reinitializing the same metric fails, so catch that error
+            try:
+                self.counter = Counter(
+                    "alertmanager_actions",
+                    "Number of alertmanager actions executions",
+                    ["action", "state", *action["labels"].keys()],
+                )
+            except ValueError:
+                pass
 
         log = "Configuration read: %s" % (config)
         logger.debug(log)
@@ -84,14 +94,19 @@ class AlertmanagerActions:
                     )
                     if treated:
                         return "KO"
-                    self._execute_command(action["command"], received_label.items())
+                    self._execute_command(
+                        action["command"],
+                        received_label.items(),
+                        labels.items(),
+                        action["name"],
+                    )
                     self._unlock_action(action["name"])
         return "OK"
 
-    def _execute_command(self, command, labels):
+    def _execute_command(self, command, received_labels, config_labels, action_name):
         # Make available all labels through environmental variables
         env = environ.copy()
-        for k, v in labels:
+        for k, v in received_labels:
             env[k.upper()] = v
         # Join the list of commands to one line with a ; separator
         cmd = ";".join([x for x in command])
@@ -109,6 +124,13 @@ class AlertmanagerActions:
         logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
         if stderr:
             logger.error("Error: %s" % stderr)
+        return_code = command.returncode
+        # Only contemplate correct or incorrect executions
+        if return_code != 0:
+            return_code = 1
+
+        labels_values = [v for k, v in config_labels]
+        self.counter.labels(action_name, return_code, *labels_values).inc()
 
     def _treat_action(self, action_name, treated_actions):
         # Proceed only if the action hasn't been treated in the same request
