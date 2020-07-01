@@ -37,13 +37,7 @@ def test_read_config(exit_calls, case, number_exit_calls, setup):
             0,
             "KO",
         ),
-        (
-            "request without alerts",
-            {"example": "fail"},
-            False,
-            0,
-            "KO",
-        ),
+        ("request without alerts", {"example": "fail"}, False, 0, "KO"),
         (
             "request without labels as list",
             {"alerts": {"labels": {"alertname": "TestActions", "test": "yes"}}},
