@@ -148,10 +148,12 @@ class AlertmanagerActions:
             logger.debug("The lock is active, so the command won't be executed")
             return True
         self.lock[action_name] = True
+        self.debug("The lock for '%s' is activated" % action_name)
         return False
 
     def _unlock_action(self, action_name):
         self.lock[action_name] = False
+        self.debug("The lock for '%s' is deactivated" % action_name)
 
     def _check_valid_request(self, request):
         if "alerts" not in request.json:
