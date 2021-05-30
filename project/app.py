@@ -86,21 +86,25 @@ class AlertmanagerActions:
                 logger.debug("Received label: %s" % received_label)
                 # Proceed only if action's labels are in received labels
                 if received_label.items() >= labels.items():
-                    locked = self._lock_action(action["name"])
-                    if locked:
-                        return "KO"
-                    treated_actions, treated = self._treat_action(
-                        action["name"], treated_actions
-                    )
-                    if treated:
-                        return "KO"
-                    self._execute_command(
-                        action["command"],
-                        received_label.items(),
-                        labels.items(),
-                        action["name"],
-                    )
-                    self._unlock_action(action["name"])
+                    try:
+                        locked = self._lock_action(action["name"])
+                        if locked:
+                            return "KO"
+                        treated_actions, treated = self._treat_action(
+                            action["name"], treated_actions
+                           )
+                        if treated:
+                            return "KO"
+                        self._execute_command(
+                            action["command"],
+                            received_label.items(),
+                            labels.items(),
+                            action["name"],
+                           )
+                        self._unlock_action(action["name"])
+                    except Exception as err:
+                        logger.error("Error: %s" % err)
+                        self._unlock_action(action["name"])
         return "OK"
 
     def _execute_command(self, command, received_labels, config_labels, action_name):
