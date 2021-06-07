@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import logging
 import subprocess  # nosec
 import sys
 from os import environ
@@ -12,9 +11,6 @@ from pyms.constants import LOGGER_NAME
 from prometheus_client import Counter
 
 
-logger = logging.getLogger(LOGGER_NAME)
-
-
 class AlertmanagerActions:
     def __init__(self):
         """
@@ -23,6 +19,7 @@ class AlertmanagerActions:
         """
         self.lock = {}
         self.app = Microservice().create_app()
+        self.logger = self.app.logger
         self.read_config()
         self.serve_endpoints()
 
@@ -35,13 +32,13 @@ class AlertmanagerActions:
         else:
             path = "config.yml"  # pragma: no cover
         log = "Reading configuration file in path: %s" % (path)
-        logger.debug(log)
+        self.logger.debug(log)
         config = []
         try:
             config = yaml.safe_load(open(path))["alertmanager_actions"]
         except Exception as error:
             log = "There was an error loading the file: %s" % (error)
-            logger.error(log)
+            self.logger.error(log)
             sys.exit(1)
 
         for action in config:
@@ -50,7 +47,7 @@ class AlertmanagerActions:
             if differences:
                 log = "There's configuration missing. Add the next keys: [%s]"
                 log = log % (", ".join(differences))
-                logger.error(log)
+                self.logger.error(log)
                 sys.exit(1)
 
         # Initialize locks and metrics and clean the locks
@@ -67,23 +64,23 @@ class AlertmanagerActions:
                 pass
 
         log = "Configuration read: %s" % (config)
-        logger.debug(log)
+        self.logger.debug(log)
         self.config = config
 
     def launch_action(self):
         treated_actions = []
         if not request.content_type:
-            logger.warning("The received content type should be 'application/json'.")
+            self.logger.warning("The received content type should be 'application/json'.")
         valid = self._check_valid_request(request)
         if not valid:
             return "KO"
-        logger.debug("Received request: %s" % request.json)
+        self.logger.debug("Received request: %s" % request.json)
         received_labels = [x["labels"] for x in request.json["alerts"]]
         for action in self.config:
-            logger.debug("Action: %s" % action)
+            self.logger.debug("Action: %s" % action)
             labels = action["labels"]
             for received_label in received_labels:
-                logger.debug("Received label: %s" % received_label)
+                self.logger.debug("Received label: %s" % received_label)
                 # Proceed only if action's labels are in received labels
                 if received_label.items() >= labels.items():
                     try:
@@ -103,7 +100,7 @@ class AlertmanagerActions:
                            )
                         self._unlock_action(action["name"])
                     except Exception as err:
-                        logger.error("Error: %s" % err)
+                        self.logger.error("Error: %s" % err)
                         self._unlock_action(action["name"])
         return "OK"
 
@@ -114,7 +111,7 @@ class AlertmanagerActions:
             env[k.upper()] = v
         # Join the list of commands to one line with a ; separator
         cmd = ";".join([x for x in command])
-        logger.debug("Command: %s" % cmd)
+        self.logger.debug("Command: %s" % cmd)
         # TODO The command is executed in a very untrustful way
         command = subprocess.Popen(
             cmd,
@@ -125,9 +122,9 @@ class AlertmanagerActions:
         )
         # Treat command output
         stdout, stderr = command.communicate()
-        logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
+        self.logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
         if stderr:
-            logger.error("Error: %s" % stderr)
+            self.logger.error("Error: %s" % stderr)
         return_code = command.returncode
         # Only contemplate correct or incorrect executions
         if return_code != 0:
@@ -140,7 +137,7 @@ class AlertmanagerActions:
         # Proceed only if the action hasn't been treated in the same request
         # AKA alerts deduplication
         if action_name in treated_actions:
-            logger.debug("Action already treated, so the command won't be executed")
+            self.logger.debug("Action already treated, so the command won't be executed")
             return treated_actions, True
         treated_actions.append(action_name)
         return treated_actions, False
@@ -149,22 +146,22 @@ class AlertmanagerActions:
         # This prevents the action to be executed if shortly after receiving
         # the alert but before executing, the same action is received
         if self.lock[action_name]:
-            logger.debug("The lock is active, so the command won't be executed")
+            self.logger.debug("The lock for '%s' is active, so the command won't be executed" % action_name)
             return True
         self.lock[action_name] = True
-        self.debug("The lock for '%s' is activated" % action_name)
+        self.logger.debug("The lock for '%s' is activated" % action_name)
         return False
 
     def _unlock_action(self, action_name):
         self.lock[action_name] = False
-        self.debug("The lock for '%s' is deactivated" % action_name)
+        self.logger.debug("The lock for '%s' is deactivated" % action_name)
 
     def _check_valid_request(self, request):
         if "alerts" not in request.json:
-            logger.debug("Invalid request: %s" % request.json)
+            self.logger.debug("Invalid request: %s" % request.json)
             return False
         if type(request.json["alerts"]) is not list:
-            logger.debug("Invalid request: %s" % request.json)
+            self.logger.debug("Invalid request: %s" % request.json)
             return False
         return True
 
@@ -187,9 +184,9 @@ class AlertmanagerActions:
             """
             Stops the threads and restarts them.
             """
-            logger.info("Reloading configuration")
+            self.logger.info("Reloading configuration")
             self.read_config()
-            logger.info("Configuration reloaded")
+            self.logger.info("Configuration reloaded")
             return jsonify(message="OK")
 
     def run_webserver(self):
