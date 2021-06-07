@@ -7,7 +7,6 @@ from os import environ
 import yaml
 from flask import jsonify, request
 from pyms.flask.app import Microservice
-from pyms.constants import LOGGER_NAME
 from prometheus_client import Counter
 
 
