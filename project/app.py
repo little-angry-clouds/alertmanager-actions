@@ -70,7 +70,8 @@ class AlertmanagerActions:
         treated_actions = []
         if not request.content_type:
             self.logger.warning(
-                "The received content type should be 'application/json'.")
+                "The received content type should be 'application/json'."
+            )
         valid = self._check_valid_request(request)
         if not valid:
             return "KO"
@@ -122,8 +123,7 @@ class AlertmanagerActions:
         )
         # Treat command output
         stdout, stderr = command.communicate()
-        self.logger.debug("Command output: %s" %
-                          stdout.decode(encoding="UTF-8"))
+        self.logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
         if stderr:
             self.logger.error("Error: %s" % stderr)
         return_code = command.returncode
@@ -139,7 +139,8 @@ class AlertmanagerActions:
         # AKA alerts deduplication
         if action_name in treated_actions:
             self.logger.debug(
-                "Action already treated, so the command won't be executed")
+                "Action already treated, so the command won't be executed"
+            )
             return treated_actions, True
         treated_actions.append(action_name)
         return treated_actions, False
@@ -149,7 +150,9 @@ class AlertmanagerActions:
         # the alert but before executing, the same action is received
         if self.lock[action_name]:
             self.logger.debug(
-                "The lock for '%s' is active, so the command won't be executed" % action_name)
+                "The lock for '%s' is active, so the command won't be executed"
+                % action_name
+            )
             return True
         self.lock[action_name] = True
         self.logger.debug("The lock for '%s' is activated" % action_name)
