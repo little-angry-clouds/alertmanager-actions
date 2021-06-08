@@ -3,6 +3,7 @@
 import subprocess  # nosec
 import sys
 from os import environ
+from threading import Timer
 
 import yaml
 from flask import jsonify, request
@@ -92,12 +93,19 @@ class AlertmanagerActions:
                             action["name"], treated_actions
                         )
                         if treated:
+                            self._unlock_action(action["name"])
                             return "KO"
+                        if "timeout" in action:
+                            timeout = action["timeout"]
+                        else:
+                            # Default is five minutes
+                            timeout = 180
                         self._execute_command(
                             action["command"],
                             received_label.items(),
                             labels.items(),
                             action["name"],
+                            timeout,
                         )
                         self._unlock_action(action["name"])
                     except Exception as err:
@@ -105,7 +113,7 @@ class AlertmanagerActions:
                         self._unlock_action(action["name"])
         return "OK"
 
-    def _execute_command(self, command, received_labels, config_labels, action_name):
+    def _execute_command(self, command, received_labels, config_labels, action_name, timeout):
         # Make available all labels through environmental variables
         env = environ.copy()
         for k, v in received_labels:
@@ -113,6 +121,8 @@ class AlertmanagerActions:
         # Join the list of commands to one line with a ; separator
         cmd = ";".join([x for x in command])
         self.logger.debug("Command: %s" % cmd)
+        # Timeout for command
+        kill = lambda process: process.kill()
         # TODO The command is executed in a very untrustful way
         command = subprocess.Popen(
             cmd,
@@ -121,8 +131,13 @@ class AlertmanagerActions:
             shell=True,  # nosec
             env=env,
         )
-        # Treat command output
-        stdout, stderr = command.communicate()
+        my_timer = Timer(timeout, kill, [command])
+        # Treat command output with timeout
+        try:
+            my_timer.start()
+            stdout, stderr = command.communicate()
+        finally:
+            my_timer.cancel()
         self.logger.debug("Command output: %s" % stdout.decode(encoding="UTF-8"))
         if stderr:
             self.logger.error("Error: %s" % stderr)
