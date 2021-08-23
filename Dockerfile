@@ -1,4 +1,4 @@
-FROM debian:stable-slim as builder
+FROM debian:buster-slim as builder
 RUN apt update && apt install -y python3 python3-dev python3-pip gcc jq
 COPY Pipfile.lock /root/
 RUN mkdir /root/wheel/ && jq --raw-output \
@@ -7,7 +7,7 @@ RUN mkdir /root/wheel/ && jq --raw-output \
     /usr/bin/pip && pip install wheel && pip wheel --wheel-dir=/root/wheel -r \
     /root/wheel/requirements.txt uwsgi
 
-FROM debian:stable-slim as production
+FROM debian:buster-slim as production
 COPY --from=builder /root/wheel /wheel
 RUN apt update && apt install -y python3 python3-pip && ln -s /usr/bin/pip3 /usr/bin/pip && pip install \
     --no-index --find-links=/wheel -r \
